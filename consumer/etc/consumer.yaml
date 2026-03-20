@@ -1,0 +1,7 @@
+Name: consumer.rpc
+ListenOn: 0.0.0.0:8080
+# disable Etcd service
+# Etcd:
+#   Hosts:
+#   - 127.0.0.1:2379
+#   Key: consumer.rpc
