@@ -5,3 +5,6 @@ ListenOn: 0.0.0.0:8080
 #   Hosts:
 #   - 127.0.0.1:2379
 #   Key: consumer.rpc
+Mode: dev
+helius_websocket_url: "wss://devnet.helius-rpc.com/?api-key=32d3502f-0947-4dc3-8c18-752f58fcd7cb"
+helius_http_rpc_url: "https://devnet.helius-rpc.com/?api-key=32d3502f-0947-4dc3-8c18-752f58fcd7cb"

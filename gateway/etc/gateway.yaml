@@ -12,7 +12,7 @@ Upstreams: # upstreams
     ProtoSets:
       - hello.pb
     # Mappings can also be written in proto options
-#    Mappings: # routes mapping
-#      - Method: get
-#        Path: /ping
-#        RpcPath: hello.Hello/Ping
+    Mappings: # routes mapping
+      - Method: get
+        Path: /ping
+        RpcPath: hello.Hello/Ping
