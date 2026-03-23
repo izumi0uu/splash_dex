@@ -1,19 +1,23 @@
 package config
 
-import (
-	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/zrpc"
+import "github.com/zeromicro/go-zero/zrpc"
+
+var Cfg Config
+
+var (
+	SolRpcUseFrequency int
 )
 
 type Config struct {
 	zrpc.RpcServerConf
 
-	HeliusWebsocketUrl string `yaml:"helius_websocket_url" json:"helius_websocket_url" env:"HELIUS_WEBSOCKET_URL"`
-	HeliusHttpRpcUrl   string `yaml:"helius_http_rpc_url" json:"helius_http_rpc_url" env:"HELIUS_HTTP_RPC_URL"`
+	Sol Chain `json:"Sol,optional"`
 }
 
-var Cfg Config
-
-func LoadConfig(configFile string) error {
-	return conf.Load(configFile, &Cfg)
+type Chain struct {
+	ChainId    int64    `json:"ChainId"`
+	NodeUrl    []string `json:"NodeUrl"`             // http rpc node lists, support multiple node urls
+	MEVNodeUrl string   `json:"MevNodeUrl,optional"` // MEV protected node url
+	WSUrl      string   `json:"WSUrl,optional"`      // websocket url
+	StartBlock uint64   `json:"StartBlock,optional"` // start block number
 }

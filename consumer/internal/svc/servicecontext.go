@@ -16,11 +16,11 @@ type ServiceContext struct {
 func NewServiceContext(c config.Config) *ServiceContext {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	client := chain.NewClient(c.HeliusWebsocketUrl)
+	client := chain.NewClient(c.Sol.WSUrl)
 	slotChan := make(chan uint64, 100)
 
 	go chain.SlotListener(client, slotChan)
-	go chain.BlockFetcher(ctx, c.HeliusHttpRpcUrl, slotChan)
+	go chain.BlockFetcher(ctx, c.Sol.NodeUrl[0], slotChan)
 
 	return &ServiceContext{
 		Config:      c,
