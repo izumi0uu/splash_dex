@@ -5,6 +5,7 @@ go 1.24.7
 require (
 	github.com/blocto/solana-go-sdk v1.30.0
 	github.com/gorilla/websocket v1.5.0
+	github.com/panjf2000/ants/v2 v2.12.0
 	github.com/zeromicro/go-zero v1.10.0
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11

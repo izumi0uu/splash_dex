@@ -2,6 +2,9 @@ Name: consumer.rpc
 ListenOn: 0.0.0.0:8080
 Mode: dev
 
+Consumer:
+  Concurrency: 10
+
 Sol:
   ChainId: 100000
   NodeUrl:

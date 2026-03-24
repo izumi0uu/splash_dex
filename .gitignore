@@ -1,0 +1,23 @@
+# Config files (contain API keys)
+**/etc/*.yaml
+
+# Proto descriptor files
+*.pb
+
+# Go build output
+bin/
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+.gocache

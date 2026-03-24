@@ -6,6 +6,7 @@ import (
 
 	"splash.xyz/dex/consumer/consumer"
 	"splash.xyz/dex/consumer/internal/config"
+	"splash.xyz/dex/consumer/internal/logic/slot"
 	"splash.xyz/dex/consumer/internal/server"
 	"splash.xyz/dex/consumer/internal/svc"
 
@@ -25,6 +26,10 @@ func main() {
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
 
+	// manage multiple services
+	group := service.NewServiceGroup()
+	defer group.Stop()
+
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
 		consumer.RegisterConsumerServer(grpcServer, server.NewConsumerServer(ctx))
 
@@ -32,8 +37,21 @@ func main() {
 			reflection.Register(grpcServer)
 		}
 	})
-	defer s.Stop()
+	group.Add(s)
+
+	{
+		// increment message queue
+		slotChan := make(chan uint64, 100)
+
+		// consumer: comsuming concurrently
+		for i := 0; i < c.Consumer.Concurrency; i++ {
+			group.Add(block.NewBlockService(ctx, "block-real", slotChan, i))
+		}
+
+		// Producer: get latest slot
+		group.Add(slot.NewSlotServiceGroup(ctx, slotChan))
+	}
 
 	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
-	s.Start()
+	group.Start()
 }
