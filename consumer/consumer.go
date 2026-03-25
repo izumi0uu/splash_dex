@@ -6,6 +6,7 @@ import (
 
 	"splash.xyz/dex/consumer/consumer"
 	"splash.xyz/dex/consumer/internal/config"
+	"splash.xyz/dex/consumer/internal/logic/block"
 	"splash.xyz/dex/consumer/internal/logic/slot"
 	"splash.xyz/dex/consumer/internal/server"
 	"splash.xyz/dex/consumer/internal/svc"
@@ -24,7 +25,7 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	ctx := svc.NewServiceContext(c)
+	ctx := svc.NewSolServiceContext(c)
 
 	// manage multiple services
 	group := service.NewServiceGroup()

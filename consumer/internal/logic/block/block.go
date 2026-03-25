@@ -8,7 +8,9 @@ import (
 
 	"github.com/blocto/solana-go-sdk/client"
 	"github.com/blocto/solana-go-sdk/rpc"
+	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gorilla/websocket"
+	"github.com/mr-tron/base58"
 	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/threading"
@@ -78,8 +80,28 @@ func (s *BlockService) GetBlockFromHttp() {
 			}
 			// fmt.Println("current slot is:", slot)
 			threading.RunSafe(func() {
-				// s.ProcessBlock(ctx, int64(slot))
+				s.ProcessBlock(ctx, int64(slot))
 			})
 		}
 	}
+}
+
+func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
+	if slot == 0 {
+		return
+	}
+
+	blockInfo, err := GetSolBlockInfoDelay(s.sc.GetSolClient(), ctx, uint64(slot))
+	if err != nil || blockInfo == nil {
+		fmt.Println("get block info error", err)
+		return
+	}
+
+	slice.ForEach(blockInfo.Transactions, func(index int, tx client.BlockTransaction) {
+		if len(tx.Transaction.Signatures) > 0 {
+			sig858 := base58.Encode(tx.Transaction.Signatures[0])
+			fmt.Println("Transaction signature: ", sig858)
+		}
+	})
+
 }
