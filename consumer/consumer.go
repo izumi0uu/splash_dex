@@ -25,6 +25,7 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
+	config.Cfg = c // sync to global so FindChainRpcByChainId can read it
 	ctx := svc.NewSolServiceContext(c)
 
 	// manage multiple services

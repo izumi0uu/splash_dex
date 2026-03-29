@@ -8,5 +8,5 @@ Consumer:
 Sol:
   ChainId: 100000
   NodeUrl:
-    - "https://devnet.helius-rpc.com/?api-key=32d3502f-0947-4dc3-8c18-752f58fcd7cb"
-  WSUrl: "wss://devnet.helius-rpc.com/?api-key=32d3502f-0947-4dc3-8c18-752f58fcd7cb"
+    - "https://mainnet.helius-rpc.com/?api-key=32d3502f-0947-4dc3-8c18-752f58fcd7cb"
+  WSUrl: "wss://mainnet.helius-rpc.com/?api-key=32d3502f-0947-4dc3-8c18-752f58fcd7cb"

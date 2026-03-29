@@ -8,7 +8,7 @@ import (
 
 	"github.com/blocto/solana-go-sdk/client"
 	"github.com/blocto/solana-go-sdk/rpc"
-	"github.com/duke-git/lancet/v2/slice"
+
 	"github.com/gorilla/websocket"
 	"github.com/mr-tron/base58"
 	"github.com/panjf2000/ants/v2"
@@ -97,11 +97,76 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 		return
 	}
 
-	slice.ForEach(blockInfo.Transactions, func(index int, tx client.BlockTransaction) {
-		if len(tx.Transaction.Signatures) > 0 {
-			sig858 := base58.Encode(tx.Transaction.Signatures[0])
-			fmt.Println("Transaction signature: ", sig858)
-		}
-	})
+	for txIdx := range blockInfo.Transactions {
+		tx := &blockInfo.Transactions[txIdx] // pointer to avoid copy
 
+		// guard 1: skip failed transaction
+		if tx.Meta.Err != nil {
+			continue
+		}
+
+		// guard 2: skip non-signature transaction
+		if len(tx.Transaction.Signatures) == 0 {
+			continue
+		}
+
+		// guard 3: skip vote transaction (~80% of all txs)
+		isVote := true
+		for _, instruction := range tx.Transaction.Message.Instructions {
+			if int(instruction.ProgramIDIndex) >= len(tx.AccountKeys) {
+				continue
+			}
+			program := tx.AccountKeys[instruction.ProgramIDIndex].String()
+			if program != constants.ProgramStrVote {
+				isVote = false
+				break
+			}
+		}
+		if isVote {
+			continue
+		}
+
+		txHash := base58.Encode(tx.Transaction.Signatures[0])
+
+		for i, ix := range tx.Transaction.Message.Instructions {
+			if int(ix.ProgramIDIndex) >= len(tx.AccountKeys) {
+				continue
+			}
+			program := tx.AccountKeys[ix.ProgramIDIndex].String()
+
+			switch program {
+			// --- DEX ---
+			case constants.ProgramStrRaydiumV4AMM:
+				s.handleDexSwap(ctx, txHash, tx, i, "RaydiumV4")
+			case constants.ProgramStrRaydiumV4CLMM:
+				s.handleDexSwap(ctx, txHash, tx, i, "RaydiumCLMM")
+			case constants.ProgramStrRaydiumCPMM:
+				s.handleDexSwap(ctx, txHash, tx, i, "RaydiumCPMM")
+			case constants.ProgramStrRaydiumV2:
+				s.handleDexSwap(ctx, txHash, tx, i, "RaydiumV2")
+			case constants.ProgramStrOrca:
+				s.handleDexSwap(ctx, txHash, tx, i, "Orca")
+			case constants.ProgramStrMeteoraDLMM:
+				s.handleDexSwap(ctx, txHash, tx, i, "MeteoraDLMM")
+			case constants.ProgramStrMeteoraPool:
+				s.handleDexSwap(ctx, txHash, tx, i, "MeteoraPool")
+			case constants.ProgramStrPhoenix:
+				s.handleDexSwap(ctx, txHash, tx, i, "Phoenix")
+			case constants.ProgramStrLifinity:
+				s.handleDexSwap(ctx, txHash, tx, i, "Lifinity")
+			// --- Launchpad ---
+			case constants.ProgramStrPumpFun:
+				s.handleDexSwap(ctx, txHash, tx, i, "PumpFun")
+			case constants.ProgramStrPumpAmm:
+				s.handleDexSwap(ctx, txHash, tx, i, "PumpSwap")
+			case constants.ProgramStrMoonshot:
+				s.handleDexSwap(ctx, txHash, tx, i, "Moonshot")
+			// --- Aggregator ---
+			case constants.ProgramStrJupiter:
+				s.handleDexSwap(ctx, txHash, tx, i, "Jupiter")
+			default:
+				continue
+			}
+		}
+	}
 }
