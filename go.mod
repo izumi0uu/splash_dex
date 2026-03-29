@@ -4,7 +4,6 @@ go 1.24.7
 
 require (
 	github.com/blocto/solana-go-sdk v1.30.0
-	github.com/duke-git/lancet/v2 v2.3.9
 	github.com/gorilla/websocket v1.5.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/panjf2000/ants/v2 v2.12.0
@@ -85,7 +84,6 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
-	golang.org/x/exp v0.0.0-20221208152030-732eee02a75a // indirect
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect

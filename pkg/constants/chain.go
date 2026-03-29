@@ -20,20 +20,40 @@ const (
 
 const SolDecimal = 9
 
-const ProgramStrRaydiumV4 = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
-const ProgramStrRaydiumV2 = "RVKd61ztZW9GUwhRbbLoYVRE5Xf1B2tVscKqwZqXgEr"
+// --- Raydium DEX Programs ---
+const ProgramStrRaydiumV4AMM = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8" // Raydium V4 AMM: constant product x*y=k, legacy pools & PumpFun graduates
+const ProgramStrRaydiumV4AMMDevnet = "DRaya7Kj3aMWQSy19kSjvmuwq9docCHofyP9kanQGaav"
+const ProgramStrRaydiumV4CLMM = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK" // Raydium CLMM: concentrated liquidity (similar to Uniswap V3)
+const ProgramStrRaydiumCPMM = "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"   // Raydium CPMM: new constant product pools, many new tokens launch here
+const ProgramStrRaydiumV2 = "RVKd61ztZW9GUwhRbbLoYVRE5Xf1B2tVscKqwZqXgEr"      // Raydium V2: legacy AMM, very low volume
 
-const ProgramStrToken = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-const ProgramStrToken2022 = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-const ProgramStrSystem = "11111111111111111111111111111111"
-const ProgramStrAssociatedToken = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+// --- Aggregator ---
+const ProgramStrJupiter = "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4" // Jupiter: largest swap aggregator on Solana, routes through underlying DEXes
 
-const ProgramStrPumpFun = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
-const ProgramStrPumpAmm = "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA"
+// --- Other DEX Programs ---
+const ProgramStrOrca = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"         // Orca Whirlpool: concentrated liquidity DEX
+const ProgramStrMeteoraDLMM = "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo"  // Meteora DLMM: dynamic liquidity market maker
+const ProgramStrMeteoraPool = "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB" // Meteora standard AMM pools
+const ProgramStrPhoenix = "PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR89jjFHGqdXY"      // Phoenix: on-chain order book DEX
+const ProgramStrLifinity = "2wT8Yq49kHgDzXuPxZSaeLaH1qbmGXtEyPy64bL7aD3c"    // Lifinity: proactive market maker DEX
 
-const TokenStrWrapSol = "So11111111111111111111111111111111111111112"
-const TokenStrUSDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-const TokenStrUSDT = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+// --- Token Launch Platforms ---
+const ProgramStrPumpFun = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"  // PumpFun: bonding curve token launchpad
+const ProgramStrPumpAmm = "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA"  // PumpSwap: PumpFun's own AMM after token graduation
+const ProgramStrMoonshot = "MoonCVVNZFSYkqNXP6bxHLPl6A4UA2iJhgoRDBsydJY" // Moonshot: alternative token launchpad
+
+// --- Solana System Programs ---
+const ProgramStrVote = "Vote111111111111111111111111111111111111111"             // Vote program: ~80% of all txs are vote txs
+const ProgramStrToken = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"            // SPL Token program
+const ProgramStrToken2022 = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"        // Token-2022: extended token standard with transfer fees, etc.
+const ProgramStrSystem = "11111111111111111111111111111111"                      // System program
+const ProgramStrAssociatedToken = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" // Associated Token Account program
+
+// --- Token Addresses (Solana) ---
+const TokenStrWrapSol = "So11111111111111111111111111111111111111112" // Wrapped SOL
+const TokenStrUSDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"   // USDC (Circle)
+const TokenStrUSDT = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"   // USDT (Tether)
+const TokenStrPYUSD = "2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo"  // PYUSD (PayPal USD)
 
 const TokenStrWrapTrx = "TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR"
 
