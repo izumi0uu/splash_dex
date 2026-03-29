@@ -9,6 +9,15 @@ import (
 	"splash.xyz/dex/pkg/constants"
 )
 
+// Block
+//  └── Transaction
+//       ├── Instructions→ recongnize which DEX program
+//       │    └── InnerInstructions（CPI）→ DEX program call SPL Token
+//       │         └── Instruction Type（Transfer / TransferChecked）→ parse amount
+//       └── Meta
+//            ├── PreTokenBalances  → token account → mint mapping
+//            └── PostTokenBalances → supplement temporary accounts
+
 func findInnerInstructions(tx *client.BlockTransaction, ixIndex int) *client.InnerInstruction {
 	for i := range tx.Meta.InnerInstructions {
 		if tx.Meta.InnerInstructions[i].Index == uint64(ixIndex) {
@@ -71,8 +80,4 @@ func extractTokenTransfers(tx *client.BlockTransaction, innerIx *client.InnerIns
 	// fill token mints(Transfer instruction doesn't contain mint, need to query from PreTokenBalances)
 
 	return transfers
-}
-
-func fillTokenMints(tx *client.BlockTransaction, transfers []*token.TransferParam) {
-
 }
