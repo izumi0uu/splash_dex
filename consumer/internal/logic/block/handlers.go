@@ -4,20 +4,21 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/blocto/solana-go-sdk/client"
+	"github.com/gagliardetto/solana-go"
+	"github.com/gagliardetto/solana-go/rpc"
 )
 
 // handleDexSwap is the universal handler for all DEX swap instructions.
 // It extracts token transfers from inner instructions and identifies the tokens involved.
-func (s *BlockService) handleDexSwap(ctx context.Context, txHash string, tx *client.BlockTransaction, ixIndex int, dexName string) {
+func (s *BlockService) handleDexSwap(ctx context.Context, txHash string, meta *rpc.TransactionMeta, accountKeys solana.PublicKeySlice, ixIndex int, dexName string) {
 	// Step 1: find inner instructions (CPI calls)
-	innerIxs := findInnerInstructions(tx, ixIndex)
+	innerIxs := findInnerInstructions(meta, ixIndex)
 	if innerIxs == nil {
 		return
 	}
 
 	// Step 2: extract Token Transfer from inner instructions
-	transfers := extractTokenTransfers(tx, innerIxs)
+	transfers := extractTokenTransfers(accountKeys, innerIxs)
 	if len(transfers) < 2 {
 		return // a swap requires at least 2 transfers (one in, one out)
 	}
@@ -26,20 +27,20 @@ func (s *BlockService) handleDexSwap(ctx context.Context, txHash string, tx *cli
 	// Check both Pre and Post balances because temporary accounts created
 	// during the transaction (e.g. wrapped SOL) only appear in PostTokenBalances.
 	mintMap := make(map[string]string)
-	for _, bal := range tx.Meta.PreTokenBalances {
-		if int(bal.AccountIndex) >= len(tx.AccountKeys) {
+	for _, bal := range meta.PreTokenBalances {
+		if int(bal.AccountIndex) >= len(accountKeys) {
 			continue
 		}
-		account := tx.AccountKeys[bal.AccountIndex].String()
-		mintMap[account] = bal.Mint
+		account := accountKeys[bal.AccountIndex].String()
+		mintMap[account] = bal.Mint.String()
 	}
-	for _, bal := range tx.Meta.PostTokenBalances {
-		if int(bal.AccountIndex) >= len(tx.AccountKeys) {
+	for _, bal := range meta.PostTokenBalances {
+		if int(bal.AccountIndex) >= len(accountKeys) {
 			continue
 		}
-		account := tx.AccountKeys[bal.AccountIndex].String()
+		account := accountKeys[bal.AccountIndex].String()
 		if _, exists := mintMap[account]; !exists {
-			mintMap[account] = bal.Mint
+			mintMap[account] = bal.Mint.String()
 		}
 	}
 

@@ -1,5 +1,15 @@
 package block
 
+import "github.com/gagliardetto/solana-go"
+
+// TokenTransfer represents a parsed SPL Token transfer from inner instructions.
+type TokenTransfer struct {
+	From   solana.PublicKey
+	To     solana.PublicKey
+	Auth   solana.PublicKey
+	Amount uint64
+}
+
 type TokenAccount struct {
 	Owner               string
 	TokenAccountAddress string

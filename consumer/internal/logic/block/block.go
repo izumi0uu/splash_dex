@@ -3,14 +3,10 @@ package block
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"time"
 
-	"github.com/blocto/solana-go-sdk/client"
-	"github.com/blocto/solana-go-sdk/rpc"
+	"github.com/gagliardetto/solana-go/rpc"
 
 	"github.com/gorilla/websocket"
-	"github.com/mr-tron/base58"
 	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/threading"
@@ -20,18 +16,17 @@ import (
 )
 
 type BlockService struct {
-	c  *client.Client
+	c  *rpc.Client
 	sc *svc.ServiceContext
 	logx.Logger
 	workerPool *ants.Pool
 	slotChan   chan uint64
-	// holders    *datastructure.CopyOnWriteList[*tokenpkg.ProgramAccount]
-	solPrice float64
-	slot     uint64
-	Conn     *websocket.Conn
-	ctx      context.Context
-	cancel   func(err error)
-	name     string
+	solPrice   float64
+	slot       uint64
+	Conn       *websocket.Conn
+	ctx        context.Context
+	cancel     func(err error)
+	name       string
 }
 
 func (s *BlockService) Stop() {
@@ -53,10 +48,7 @@ func NewBlockService(sc *svc.ServiceContext, name string, slotChan chan uint64, 
 	ctx, cancel := context.WithCancelCause(context.Background())
 	pool, _ := ants.NewPool(5)
 	solService := &BlockService{
-		c: client.New(rpc.WithEndpoint(config.FindChainRpcByChainId(constants.SolChainIdInt)), rpc.WithHTTPClient(&http.Client{
-			Timeout: 5 * time.Second,
-		})),
-		// holders:    datastructure.NewCopyOnWriteList[*tokenpkg.ProgramAccount]([]*tokenpkg.ProgramAccount{}),
+		c:          svc.NewSolRPCClient(config.FindChainRpcByChainId(constants.SolChainIdInt)),
 		sc:         sc,
 		Logger:     logx.WithContext(context.Background()).WithFields(logx.Field("service", fmt.Sprintf("%s-%v", name, index))),
 		slotChan:   slotChan,
@@ -98,25 +90,40 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 	}
 
 	for txIdx := range blockInfo.Transactions {
-		tx := &blockInfo.Transactions[txIdx] // pointer to avoid copy
+		txWithMeta := &blockInfo.Transactions[txIdx]
 
 		// guard 1: skip failed transaction
-		if tx.Meta.Err != nil {
+		if txWithMeta.Meta == nil || txWithMeta.Meta.Err != nil {
+			continue
+		}
+
+		// decode transaction from base64
+		parsedTx, err := txWithMeta.GetTransaction()
+		if err != nil || parsedTx == nil {
 			continue
 		}
 
 		// guard 2: skip non-signature transaction
-		if len(tx.Transaction.Signatures) == 0 {
+		if len(parsedTx.Signatures) == 0 {
 			continue
+		}
+
+		// Resolve all account keys (static + loaded addresses from ALT)
+		accountKeys := parsedTx.Message.AccountKeys
+		if txWithMeta.Meta.LoadedAddresses.Writable != nil {
+			accountKeys = append(accountKeys, txWithMeta.Meta.LoadedAddresses.Writable...)
+		}
+		if txWithMeta.Meta.LoadedAddresses.ReadOnly != nil {
+			accountKeys = append(accountKeys, txWithMeta.Meta.LoadedAddresses.ReadOnly...)
 		}
 
 		// guard 3: skip vote transaction (~80% of all txs)
 		isVote := true
-		for _, instruction := range tx.Transaction.Message.Instructions {
-			if int(instruction.ProgramIDIndex) >= len(tx.AccountKeys) {
+		for _, instruction := range parsedTx.Message.Instructions {
+			if int(instruction.ProgramIDIndex) >= len(accountKeys) {
 				continue
 			}
-			program := tx.AccountKeys[instruction.ProgramIDIndex].String()
+			program := accountKeys[instruction.ProgramIDIndex].String()
 			if program != constants.ProgramStrVote {
 				isVote = false
 				break
@@ -126,44 +133,44 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 			continue
 		}
 
-		txHash := base58.Encode(tx.Transaction.Signatures[0])
+		txHash := parsedTx.Signatures[0].String()
 
-		for i, ix := range tx.Transaction.Message.Instructions {
-			if int(ix.ProgramIDIndex) >= len(tx.AccountKeys) {
+		for i, ix := range parsedTx.Message.Instructions {
+			if int(ix.ProgramIDIndex) >= len(accountKeys) {
 				continue
 			}
-			program := tx.AccountKeys[ix.ProgramIDIndex].String()
+			program := accountKeys[ix.ProgramIDIndex].String()
 
 			switch program {
 			// --- DEX ---
 			case constants.ProgramStrRaydiumV4AMM:
-				s.handleDexSwap(ctx, txHash, tx, i, "RaydiumV4")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "RaydiumV4")
 			case constants.ProgramStrRaydiumV4CLMM:
-				s.handleDexSwap(ctx, txHash, tx, i, "RaydiumCLMM")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "RaydiumCLMM")
 			case constants.ProgramStrRaydiumCPMM:
-				s.handleDexSwap(ctx, txHash, tx, i, "RaydiumCPMM")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "RaydiumCPMM")
 			case constants.ProgramStrRaydiumV2:
-				s.handleDexSwap(ctx, txHash, tx, i, "RaydiumV2")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "RaydiumV2")
 			case constants.ProgramStrOrca:
-				s.handleDexSwap(ctx, txHash, tx, i, "Orca")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "Orca")
 			case constants.ProgramStrMeteoraDLMM:
-				s.handleDexSwap(ctx, txHash, tx, i, "MeteoraDLMM")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "MeteoraDLMM")
 			case constants.ProgramStrMeteoraPool:
-				s.handleDexSwap(ctx, txHash, tx, i, "MeteoraPool")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "MeteoraPool")
 			case constants.ProgramStrPhoenix:
-				s.handleDexSwap(ctx, txHash, tx, i, "Phoenix")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "Phoenix")
 			case constants.ProgramStrLifinity:
-				s.handleDexSwap(ctx, txHash, tx, i, "Lifinity")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "Lifinity")
 			// --- Launchpad ---
 			case constants.ProgramStrPumpFun:
-				s.handleDexSwap(ctx, txHash, tx, i, "PumpFun")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "PumpFun")
 			case constants.ProgramStrPumpAmm:
-				s.handleDexSwap(ctx, txHash, tx, i, "PumpSwap")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "PumpSwap")
 			case constants.ProgramStrMoonshot:
-				s.handleDexSwap(ctx, txHash, tx, i, "Moonshot")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "Moonshot")
 			// --- Aggregator ---
 			case constants.ProgramStrJupiter:
-				s.handleDexSwap(ctx, txHash, tx, i, "Jupiter")
+				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "Jupiter")
 			default:
 				continue
 			}

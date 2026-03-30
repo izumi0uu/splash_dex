@@ -5,19 +5,29 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blocto/solana-go-sdk/client"
-	solclient "github.com/blocto/solana-go-sdk/client"
-	"github.com/blocto/solana-go-sdk/rpc"
+	"github.com/gagliardetto/solana-go/rpc"
+	"github.com/gagliardetto/solana-go/rpc/jsonrpc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"splash.xyz/dex/consumer/internal/config"
 )
+
+const defaultRPCTimeout = 10 * time.Second
 
 type ServiceContext struct {
 	Config         config.Config
 	solClientLock  sync.Mutex
 	solClientIndex int
-	solClient      *solclient.Client
-	solClients     []*solclient.Client
+	solClient      *rpc.Client
+	solClients     []*rpc.Client
+}
+
+func NewSolRPCClient(endpoint string) *rpc.Client {
+	rpcClient := jsonrpc.NewClientWithOpts(endpoint, &jsonrpc.RPCClientOpts{
+		HTTPClient: &http.Client{
+			Timeout: defaultRPCTimeout,
+		},
+	})
+	return rpc.NewWithCustomRPCClient(rpcClient)
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -32,12 +42,9 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 	logx.Infof("newSolServiceContext: config: %v", c)
 
 	// range all nodes, create client for each node
-	var solClients []*solclient.Client
+	var solClients []*rpc.Client
 	for _, node := range c.Sol.NodeUrl {
-		solClients = append(solClients, client.New(
-			rpc.WithEndpoint(node),
-			rpc.WithHTTPClient(&http.Client{Timeout: 10 * time.Second}),
-		))
+		solClients = append(solClients, NewSolRPCClient(node))
 	}
 
 	return &ServiceContext{
@@ -46,7 +53,7 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 	}
 }
 
-func (sc *ServiceContext) GetSolClient() *client.Client {
+func (sc *ServiceContext) GetSolClient() *rpc.Client {
 	// 1. lock to prevent managing goroutines concurrently
 	sc.solClientLock.Lock()
 	defer sc.solClientLock.Unlock()
