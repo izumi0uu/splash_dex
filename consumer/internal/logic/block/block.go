@@ -163,9 +163,9 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "Lifinity")
 			// --- Launchpad ---
 			case constants.ProgramStrPumpFun:
-				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "PumpFun")
+				s.handlePumpFunBondingCurve(ctx, txHash, txWithMeta.Meta, accountKeys, i)
 			case constants.ProgramStrPumpAmm:
-				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "PumpSwap")
+				s.handlePumpSwapAMM(ctx, txHash, txWithMeta.Meta, accountKeys, i)
 			case constants.ProgramStrMoonshot:
 				s.handleDexSwap(ctx, txHash, txWithMeta.Meta, accountKeys, i, "Moonshot")
 			// --- Aggregator ---

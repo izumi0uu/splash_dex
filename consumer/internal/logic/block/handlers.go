@@ -8,8 +8,9 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
-// handleDexSwap is the universal handler for all DEX swap instructions.
+// handleDexSwap is the generic handler for DEX programs without Anchor events (e.g. Raydium V4).
 // It extracts token transfers from inner instructions and identifies the tokens involved.
+// For Anchor-based programs (PumpFun, PumpSwap, CLMM, CPMM), use protocol-specific handlers instead.
 func (s *BlockService) handleDexSwap(ctx context.Context, txHash string, meta *rpc.TransactionMeta, accountKeys solana.PublicKeySlice, ixIndex int, dexName string) {
 	// Step 1: find inner instructions (CPI calls)
 	innerIxs := findInnerInstructions(meta, ixIndex)
@@ -24,25 +25,7 @@ func (s *BlockService) handleDexSwap(ctx context.Context, txHash string, meta *r
 	}
 
 	// Step 3: build mapping for token mint (token account → mint address)
-	// Check both Pre and Post balances because temporary accounts created
-	// during the transaction (e.g. wrapped SOL) only appear in PostTokenBalances.
-	mintMap := make(map[string]string)
-	for _, bal := range meta.PreTokenBalances {
-		if int(bal.AccountIndex) >= len(accountKeys) {
-			continue
-		}
-		account := accountKeys[bal.AccountIndex].String()
-		mintMap[account] = bal.Mint.String()
-	}
-	for _, bal := range meta.PostTokenBalances {
-		if int(bal.AccountIndex) >= len(accountKeys) {
-			continue
-		}
-		account := accountKeys[bal.AccountIndex].String()
-		if _, exists := mintMap[account]; !exists {
-			mintMap[account] = bal.Mint.String()
-		}
-	}
+	mintMap := buildMintMap(meta, accountKeys)
 
 	// Step 4: print (replace with actual business logic later)
 	fmt.Printf("[%s] tx: %s, transfers: %d\n", dexName, txHash, len(transfers))

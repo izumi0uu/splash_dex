@@ -11,7 +11,7 @@ import (
 	"splash.xyz/dex/consumer/internal/config"
 )
 
-const defaultRPCTimeout = 10 * time.Second
+const defaultRPCTimeout = 30 * time.Second
 
 type ServiceContext struct {
 	Config         config.Config
