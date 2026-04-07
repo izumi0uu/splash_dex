@@ -132,4 +132,3 @@ func buildMintMap(meta *rpc.TransactionMeta, accountKeys solana.PublicKeySlice) 
 	}
 	return mintMap
 }
-
