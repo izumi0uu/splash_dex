@@ -121,7 +121,7 @@ func (s *BlockService) handlePumpSwapAMM(ctx context.Context, txHash string, met
 func decodePumpSwapAMMInstruction(txHash string, ix solana.CompiledInstruction, accountKeys solana.PublicKeySlice) error {
 	ixName := decodePumpAmmInstructionName(ix)
 	if ixName == "" {
-		return fmt.Errorf("unknown pump amm instruction")
+		return nil
 	}
 	if err := validatePumpAmmAccounts(ixName, len(ix.Accounts)); err != nil {
 		return fmt.Errorf("invalid accounts length: %w", err)
@@ -153,8 +153,31 @@ func decodePumpSwapAMMInstruction(txHash string, ix solana.CompiledInstruction, 
 		feeConfig := accountKeys[ix.Accounts[21]]
 		feeProgram := accountKeys[ix.Accounts[22]]
 
-		fmt.Printf("[PumpSwap IX] %s tx: %s, pool: %s, user: %s, globalConfig: %s, baseMint: %s, quoteMint: %s, userBaseTokenAccount: %s, userQuoteTokenAccount: %s, poolBaseTokenAccount: %s, poolQuoteTokenAccount: %s, protocolFeeRecipient: %s, protocolFeeRecipientTokenAccount: %s, baseTokenProgram: %s, quoteTokenProgram: %s, systemProgram: %s, associatedTokenProgram: %s, eventAuthority: %s, program: %s, coinCreatorVaultAta: %s, coinCreatorVaultAuthority: %s, globalVolumeAccumulator: %s, userVolumeAccumulator: %s, feeConfig: %s, feeProgram: %s\n",
-			ixName, txHash, pool, user, globalConfig, baseMint, quoteMint, userBaseTokenAccount, userQuoteTokenAccount, poolBaseTokenAccount, poolQuoteTokenAccount, protocolFeeRecipient, protocolFeeRecipientTokenAccount, baseTokenProgram, quoteTokenProgram, systemProgram, associatedTokenProgram, eventAuthority, program, coinCreatorVaultAta, coinCreatorVaultAuthority, globalVolumeAccumulator, userVolumeAccumulator, feeConfig, feeProgram)
+		printInstructionAccounts("[PumpSwap IX]", ixName, txHash,
+			"pool", pool,
+			"user", user,
+			"globalConfig", globalConfig,
+			"baseMint", baseMint,
+			"quoteMint", quoteMint,
+			"userBaseTokenAccount", userBaseTokenAccount,
+			"userQuoteTokenAccount", userQuoteTokenAccount,
+			"poolBaseTokenAccount", poolBaseTokenAccount,
+			"poolQuoteTokenAccount", poolQuoteTokenAccount,
+			"protocolFeeRecipient", protocolFeeRecipient,
+			"protocolFeeRecipientTokenAccount", protocolFeeRecipientTokenAccount,
+			"baseTokenProgram", baseTokenProgram,
+			"quoteTokenProgram", quoteTokenProgram,
+			"systemProgram", systemProgram,
+			"associatedTokenProgram", associatedTokenProgram,
+			"eventAuthority", eventAuthority,
+			"program", program,
+			"coinCreatorVaultAta", coinCreatorVaultAta,
+			"coinCreatorVaultAuthority", coinCreatorVaultAuthority,
+			"globalVolumeAccumulator", globalVolumeAccumulator,
+			"userVolumeAccumulator", userVolumeAccumulator,
+			"feeConfig", feeConfig,
+			"feeProgram", feeProgram,
+		)
 		return nil
 	case "Sell":
 		pool := accountKeys[ix.Accounts[0]]
@@ -179,8 +202,29 @@ func decodePumpSwapAMMInstruction(txHash string, ix solana.CompiledInstruction, 
 		feeConfig := accountKeys[ix.Accounts[19]]
 		feeProgram := accountKeys[ix.Accounts[20]]
 
-		fmt.Printf("[PumpSwap IX] %s tx: %s, pool: %s, user: %s, globalConfig: %s, baseMint: %s, quoteMint: %s, userBaseTokenAccount: %s, userQuoteTokenAccount: %s, poolBaseTokenAccount: %s, poolQuoteTokenAccount: %s, protocolFeeRecipient: %s, protocolFeeRecipientTokenAccount: %s, baseTokenProgram: %s, quoteTokenProgram: %s, systemProgram: %s, associatedTokenProgram: %s, eventAuthority: %s, program: %s, coinCreatorVaultAta: %s, coinCreatorVaultAuthority: %s, feeConfig: %s, feeProgram: %s\n",
-			ixName, txHash, pool, user, globalConfig, baseMint, quoteMint, userBaseTokenAccount, userQuoteTokenAccount, poolBaseTokenAccount, poolQuoteTokenAccount, protocolFeeRecipient, protocolFeeRecipientTokenAccount, baseTokenProgram, quoteTokenProgram, systemProgram, associatedTokenProgram, eventAuthority, program, coinCreatorVaultAta, coinCreatorVaultAuthority, feeConfig, feeProgram)
+		printInstructionAccounts("[PumpSwap IX]", ixName, txHash,
+			"pool", pool,
+			"user", user,
+			"globalConfig", globalConfig,
+			"baseMint", baseMint,
+			"quoteMint", quoteMint,
+			"userBaseTokenAccount", userBaseTokenAccount,
+			"userQuoteTokenAccount", userQuoteTokenAccount,
+			"poolBaseTokenAccount", poolBaseTokenAccount,
+			"poolQuoteTokenAccount", poolQuoteTokenAccount,
+			"protocolFeeRecipient", protocolFeeRecipient,
+			"protocolFeeRecipientTokenAccount", protocolFeeRecipientTokenAccount,
+			"baseTokenProgram", baseTokenProgram,
+			"quoteTokenProgram", quoteTokenProgram,
+			"systemProgram", systemProgram,
+			"associatedTokenProgram", associatedTokenProgram,
+			"eventAuthority", eventAuthority,
+			"program", program,
+			"coinCreatorVaultAta", coinCreatorVaultAta,
+			"coinCreatorVaultAuthority", coinCreatorVaultAuthority,
+			"feeConfig", feeConfig,
+			"feeProgram", feeProgram,
+		)
 		return nil
 	case "CreatePool":
 		pool := accountKeys[ix.Accounts[0]]
@@ -202,8 +246,26 @@ func decodePumpSwapAMMInstruction(txHash string, ix solana.CompiledInstruction, 
 		eventAuthority := accountKeys[ix.Accounts[16]]
 		program := accountKeys[ix.Accounts[17]]
 
-		fmt.Printf("[PumpSwap IX] %s tx: %s, pool: %s, globalConfig: %s, creator: %s, baseMint: %s, quoteMint: %s, lpMint: %s, userBaseTokenAccount: %s, userQuoteTokenAccount: %s, userPoolTokenAccount: %s, poolBaseTokenAccount: %s, poolQuoteTokenAccount: %s, systemProgram: %s, token2022Program: %s, baseTokenProgram: %s, quoteTokenProgram: %s, associatedTokenProgram: %s, eventAuthority: %s, program: %s\n",
-			ixName, txHash, pool, globalConfig, creator, baseMint, quoteMint, lpMint, userBaseTokenAccount, userQuoteTokenAccount, userPoolTokenAccount, poolBaseTokenAccount, poolQuoteTokenAccount, systemProgram, token2022Program, baseTokenProgram, quoteTokenProgram, associatedTokenProgram, eventAuthority, program)
+		printInstructionAccounts("[PumpSwap IX]", ixName, txHash,
+			"pool", pool,
+			"globalConfig", globalConfig,
+			"creator", creator,
+			"baseMint", baseMint,
+			"quoteMint", quoteMint,
+			"lpMint", lpMint,
+			"userBaseTokenAccount", userBaseTokenAccount,
+			"userQuoteTokenAccount", userQuoteTokenAccount,
+			"userPoolTokenAccount", userPoolTokenAccount,
+			"poolBaseTokenAccount", poolBaseTokenAccount,
+			"poolQuoteTokenAccount", poolQuoteTokenAccount,
+			"systemProgram", systemProgram,
+			"token2022Program", token2022Program,
+			"baseTokenProgram", baseTokenProgram,
+			"quoteTokenProgram", quoteTokenProgram,
+			"associatedTokenProgram", associatedTokenProgram,
+			"eventAuthority", eventAuthority,
+			"program", program,
+		)
 		return nil
 	}
 
@@ -213,7 +275,7 @@ func decodePumpSwapAMMInstruction(txHash string, ix solana.CompiledInstruction, 
 func decodePumpFunBondingCurveInstruction(txHash string, ix solana.CompiledInstruction, accountKeys solana.PublicKeySlice) error {
 	ixName := decodePumpFunInstruction(ix)
 	if ixName == "" {
-		return fmt.Errorf("unknown pumpfun bonding curve instruction")
+		return nil
 	}
 	if err := validatePumpFunBondingCurveAccounts(ixName, len(ix.Accounts)); err != nil {
 		return fmt.Errorf("invalid accounts length: %w", err)
@@ -238,8 +300,24 @@ func decodePumpFunBondingCurveInstruction(txHash string, ix solana.CompiledInstr
 		feeConfig := accountKeys[ix.Accounts[14]]
 		feeProgram := accountKeys[ix.Accounts[15]]
 
-		fmt.Printf("[PumpFun BC IX] %s tx: %s, global: %s, feeRecipient: %s, mint: %s, bondingCurve: %s, associatedBondingCurve: %s, associatedUser: %s, user: %s, systemProgram: %s, tokenProgram: %s, creatorVault: %s, eventAuthority: %s, program: %s, globalVolumeAccumulator: %s, userVolumeAccumulator: %s, feeConfig: %s, feeProgram: %s\n",
-			ixName, txHash, global, feeRecipient, mint, bondingCurve, associatedBondingCurve, associatedUser, user, systemProgram, tokenProgram, creatorVault, eventAuthority, program, globalVolumeAccumulator, userVolumeAccumulator, feeConfig, feeProgram)
+		printInstructionAccounts("[PumpFun BC IX]", ixName, txHash,
+			"global", global,
+			"feeRecipient", feeRecipient,
+			"mint", mint,
+			"bondingCurve", bondingCurve,
+			"associatedBondingCurve", associatedBondingCurve,
+			"associatedUser", associatedUser,
+			"user", user,
+			"systemProgram", systemProgram,
+			"tokenProgram", tokenProgram,
+			"creatorVault", creatorVault,
+			"eventAuthority", eventAuthority,
+			"program", program,
+			"globalVolumeAccumulator", globalVolumeAccumulator,
+			"userVolumeAccumulator", userVolumeAccumulator,
+			"feeConfig", feeConfig,
+			"feeProgram", feeProgram,
+		)
 		return nil
 	case "Sell":
 		global := accountKeys[ix.Accounts[0]]
@@ -257,8 +335,22 @@ func decodePumpFunBondingCurveInstruction(txHash string, ix solana.CompiledInstr
 		feeConfig := accountKeys[ix.Accounts[12]]
 		feeProgram := accountKeys[ix.Accounts[13]]
 
-		fmt.Printf("[PumpFun BC IX] %s tx: %s, global: %s, feeRecipient: %s, mint: %s, bondingCurve: %s, associatedBondingCurve: %s, associatedUser: %s, user: %s, systemProgram: %s, creatorVault: %s, tokenProgram: %s, eventAuthority: %s, program: %s, feeConfig: %s, feeProgram: %s\n",
-			ixName, txHash, global, feeRecipient, mint, bondingCurve, associatedBondingCurve, associatedUser, user, systemProgram, creatorVault, tokenProgram, eventAuthority, program, feeConfig, feeProgram)
+		printInstructionAccounts("[PumpFun BC IX]", ixName, txHash,
+			"global", global,
+			"feeRecipient", feeRecipient,
+			"mint", mint,
+			"bondingCurve", bondingCurve,
+			"associatedBondingCurve", associatedBondingCurve,
+			"associatedUser", associatedUser,
+			"user", user,
+			"systemProgram", systemProgram,
+			"creatorVault", creatorVault,
+			"tokenProgram", tokenProgram,
+			"eventAuthority", eventAuthority,
+			"program", program,
+			"feeConfig", feeConfig,
+			"feeProgram", feeProgram,
+		)
 		return nil
 	case "Create":
 		mint := accountKeys[ix.Accounts[0]]
@@ -276,8 +368,22 @@ func decodePumpFunBondingCurveInstruction(txHash string, ix solana.CompiledInstr
 		eventAuthority := accountKeys[ix.Accounts[12]]
 		program := accountKeys[ix.Accounts[13]]
 
-		fmt.Printf("[PumpFun BC IX] %s tx: %s, mint: %s, mintAuthority: %s, bondingCurve: %s, associatedBondingCurve: %s, global: %s, mplTokenMetadata: %s, metadata: %s, user: %s, systemProgram: %s, tokenProgram: %s, associatedTokenProgram: %s, rent: %s, eventAuthority: %s, program: %s\n",
-			ixName, txHash, mint, mintAuthority, bondingCurve, associatedBondingCurve, global, mplTokenMetadata, metadata, user, systemProgram, tokenProgram, associatedTokenProgram, rent, eventAuthority, program)
+		printInstructionAccounts("[PumpFun BC IX]", ixName, txHash,
+			"mint", mint,
+			"mintAuthority", mintAuthority,
+			"bondingCurve", bondingCurve,
+			"associatedBondingCurve", associatedBondingCurve,
+			"global", global,
+			"mplTokenMetadata", mplTokenMetadata,
+			"metadata", metadata,
+			"user", user,
+			"systemProgram", systemProgram,
+			"tokenProgram", tokenProgram,
+			"associatedTokenProgram", associatedTokenProgram,
+			"rent", rent,
+			"eventAuthority", eventAuthority,
+			"program", program,
+		)
 		return nil
 	case "CreateV2":
 		mint := accountKeys[ix.Accounts[0]]
@@ -297,8 +403,24 @@ func decodePumpFunBondingCurveInstruction(txHash string, ix solana.CompiledInstr
 		eventAuthority := accountKeys[ix.Accounts[14]]
 		program := accountKeys[ix.Accounts[15]]
 
-		fmt.Printf("[PumpFun BC IX] %s tx: %s, mint: %s, mintAuthority: %s, bondingCurve: %s, associatedBondingCurve: %s, global: %s, user: %s, systemProgram: %s, tokenProgram: %s, associatedTokenProgram: %s, mayhemProgramID: %s, globalParams: %s, solVault: %s, mayhemState: %s, mayhemTokenVault: %s, eventAuthority: %s, program: %s\n",
-			ixName, txHash, mint, mintAuthority, bondingCurve, associatedBondingCurve, global, user, systemProgram, tokenProgram, associatedTokenProgram, mayhemProgramID, globalParams, solVault, mayhemState, mayhemTokenVault, eventAuthority, program)
+		printInstructionAccounts("[PumpFun BC IX]", ixName, txHash,
+			"mint", mint,
+			"mintAuthority", mintAuthority,
+			"bondingCurve", bondingCurve,
+			"associatedBondingCurve", associatedBondingCurve,
+			"global", global,
+			"user", user,
+			"systemProgram", systemProgram,
+			"tokenProgram", tokenProgram,
+			"associatedTokenProgram", associatedTokenProgram,
+			"mayhemProgramID", mayhemProgramID,
+			"globalParams", globalParams,
+			"solVault", solVault,
+			"mayhemState", mayhemState,
+			"mayhemTokenVault", mayhemTokenVault,
+			"eventAuthority", eventAuthority,
+			"program", program,
+		)
 		return nil
 	}
 
@@ -309,16 +431,16 @@ func validatePumpAmmAccounts(ixName string, n int) error {
 
 	switch ixName {
 	case "Buy", "BuyExactQuoteIn":
-		if n != 23 {
-			return fmt.Errorf("%s invalid accounts length: %d", ixName, n)
+		if n < 23 {
+			return fmt.Errorf("%s invalid accounts length: %d (want >= 23)", ixName, n)
 		}
 	case "Sell":
-		if n != 21 {
-			return fmt.Errorf("%s invalid accounts length: %d", ixName, n)
+		if n < 21 {
+			return fmt.Errorf("%s invalid accounts length: %d (want >= 21)", ixName, n)
 		}
 	case "CreatePool":
-		if n != 18 {
-			return fmt.Errorf("%s invalid accounts length: %d", ixName, n)
+		if n < 18 {
+			return fmt.Errorf("%s invalid accounts length: %d (want >= 18)", ixName, n)
 		}
 	}
 	return nil
@@ -327,23 +449,31 @@ func validatePumpAmmAccounts(ixName string, n int) error {
 func validatePumpFunBondingCurveAccounts(ixName string, n int) error {
 	switch ixName {
 	case "Buy", "BuyExactSolIn":
-		if n != 16 {
-			return fmt.Errorf("%s invalid accounts length: %d", ixName, n)
+		if n < 16 {
+			return fmt.Errorf("%s invalid accounts length: %d (want >= 16)", ixName, n)
 		}
 	case "Sell":
-		if n != 14 {
-			return fmt.Errorf("%s invalid accounts length: %d", ixName, n)
+		if n < 14 {
+			return fmt.Errorf("%s invalid accounts length: %d (want >= 14)", ixName, n)
 		}
 	case "Create":
-		if n != 14 {
-			return fmt.Errorf("%s invalid accounts length: %d", ixName, n)
+		if n < 14 {
+			return fmt.Errorf("%s invalid accounts length: %d (want >= 14)", ixName, n)
 		}
 	case "CreateV2":
-		if n != 16 {
-			return fmt.Errorf("%s invalid accounts length: %d", ixName, n)
+		if n < 16 {
+			return fmt.Errorf("%s invalid accounts length: %d (want >= 16)", ixName, n)
 		}
 	}
 	return nil
+}
+
+func printInstructionAccounts(prefix, ixName, txHash string, fields ...any) {
+	fmt.Printf("%s %s tx: %s\n", prefix, ixName, txHash)
+	for i := 0; i+1 < len(fields); i += 2 {
+		fmt.Printf("  %v: %v\n", fields[i], fields[i+1])
+	}
+	fmt.Println()
 }
 
 func decodePumpAmmInstructionName(ix solana.CompiledInstruction) string {
