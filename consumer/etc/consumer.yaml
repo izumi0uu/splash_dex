@@ -10,3 +10,10 @@ Sol:
   NodeUrl:
     - "https://mainnet.helius-rpc.com/?api-key=32d3502f-0947-4dc3-8c18-752f58fcd7cb"
   WSUrl: "wss://mainnet.helius-rpc.com/?api-key=32d3502f-0947-4dc3-8c18-752f58fcd7cb"
+
+Mysql:
+  Host: 127.0.0.1
+  Port: 3306
+  User: root
+  Password: root
+  Database: splash_dex

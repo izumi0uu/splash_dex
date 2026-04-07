@@ -21,3 +21,4 @@ vendor/
 *.log
 
 .gocache
+docker/mysql/data/

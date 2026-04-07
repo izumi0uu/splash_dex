@@ -19,6 +19,7 @@ type Config struct {
 	Sol Chain `json:"Sol,optional"`
 
 	Consumer Consumer `json:"Consumer,optional"`
+	Mysql    Mysql    `json:"Mysql,optional"`
 }
 
 type Consumer struct {
@@ -31,6 +32,14 @@ type Chain struct {
 	MEVNodeUrl string   `json:"MevNodeUrl,optional"` // MEV protected node url
 	WSUrl      string   `json:"WSUrl,optional"`      // websocket url
 	StartBlock uint64   `json:"StartBlock,optional"` // start block number
+}
+
+type Mysql struct {
+	Host     string `json:"Host"`
+	Port     int    `json:"Port"`
+	User     string `json:"User"`
+	Password string `json:"Password,optional"`
+	Database string `json:"Database"`
 }
 
 func FindChainRpcByChainId(chainId int) (rpc string) {

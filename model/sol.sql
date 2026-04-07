@@ -1,0 +1,61 @@
+CREATE TABLE IF NOT EXISTS sol_blocks (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    chain_id BIGINT NOT NULL,
+    slot BIGINT UNSIGNED NOT NULL,
+    block_time DATETIME(3) NULL,
+    tx_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_chain_slot (chain_id, slot),
+    KEY idx_block_time (block_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sol_transactions (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    chain_id BIGINT NOT NULL,
+    slot BIGINT UNSIGNED NOT NULL,
+    tx_hash VARCHAR(128) NOT NULL,
+    signer VARCHAR(64) DEFAULT NULL,
+    program VARCHAR(128) DEFAULT NULL,
+    dex_name VARCHAR(64) DEFAULT NULL,
+    success TINYINT(1) NOT NULL DEFAULT 1,
+    block_time DATETIME(3) NULL,
+    raw_json JSON DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_chain_tx_hash (chain_id, tx_hash),
+    KEY idx_slot (slot),
+    KEY idx_program (program),
+    KEY idx_dex_name (dex_name),
+    KEY idx_block_time (block_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sol_swaps (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    chain_id BIGINT NOT NULL,
+    slot BIGINT UNSIGNED NOT NULL,
+    tx_hash VARCHAR(128) NOT NULL,
+    dex_name VARCHAR(64) NOT NULL,
+    swap_type VARCHAR(16) DEFAULT NULL,
+    pool_address VARCHAR(64) DEFAULT NULL,
+    user_address VARCHAR(64) DEFAULT NULL,
+    base_mint VARCHAR(64) DEFAULT NULL,
+    quote_mint VARCHAR(64) DEFAULT NULL,
+    base_amount DECIMAL(38,18) DEFAULT NULL,
+    quote_amount DECIMAL(38,18) DEFAULT NULL,
+    base_amount_raw BIGINT DEFAULT NULL,
+    quote_amount_raw BIGINT DEFAULT NULL,
+    fee_lamports BIGINT DEFAULT NULL,
+    block_time DATETIME(3) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_tx_hash (tx_hash),
+    KEY idx_slot (slot),
+    KEY idx_dex_name (dex_name),
+    KEY idx_user_address (user_address),
+    KEY idx_pool_address (pool_address),
+    KEY idx_block_time (block_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
