@@ -3,6 +3,8 @@ package block
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/gagliardetto/solana-go/rpc"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/threading"
 	"splash.xyz/dex/consumer/internal/config"
+	"splash.xyz/dex/consumer/internal/model"
 	"splash.xyz/dex/consumer/internal/svc"
 	"splash.xyz/dex/pkg/constants"
 )
@@ -83,10 +86,44 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 		return
 	}
 
+	blockRecord := &model.SolBlocks{
+		ChainId: s.sc.Config.Sol.ChainId,
+		Slot:    uint64(slot),
+		Status:  constants.BlockPending,
+		ErrMsg:  NullableString(""),
+	}
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			blockRecord.Status = constants.BlockFailed
+			blockRecord.ErrMsg = TrimmedNullableString(fmt.Sprintf("panic: %v", recovered))
+			s.Errorf("process block panic, slot=%d, err=%v", slot, recovered)
+		}
+		if blockRecord.Status == constants.BlockPending {
+			blockRecord.Status = constants.BlockFailed
+		}
+		s.persistBlock(blockRecord)
+	}()
+
 	blockInfo, err := GetSolBlockInfoDelay(s.sc.GetSolClient(), ctx, uint64(slot))
 	if err != nil || blockInfo == nil {
-		fmt.Println("get block info error", err)
+		if err == nil {
+			err = fmt.Errorf("empty block info")
+		}
+		blockRecord.Status = classifyBlockStatus(err)
+		blockRecord.ErrMsg = TrimmedNullableString(err.Error())
+		s.Errorf("get block info error, slot=%d, err=%v", slot, err)
 		return
+	}
+
+	if blockInfo.BlockHeight != nil {
+		blockRecord.BlockHeight = NullableInt64(int64(*blockInfo.BlockHeight))
+	}
+	blockRecord.ParentSlot = NullableInt64(int64(blockInfo.ParentSlot))
+	blockRecord.BlockHash = NullableString(blockInfo.Blockhash.String())
+	blockRecord.PreviousBlockHash = NullableString(blockInfo.PreviousBlockhash.String())
+	blockRecord.TxCount = int64(len(blockInfo.Transactions))
+	if blockInfo.BlockTime != nil {
+		blockRecord.BlockTime = NullableTime(blockInfo.BlockTime.Time())
 	}
 
 	for txIdx := range blockInfo.Transactions {
@@ -176,4 +213,36 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 			}
 		}
 	}
+
+	blockRecord.Status = constants.BlockProcessed
+	blockRecord.ErrMsg = NullableString("")
+}
+
+func (s *BlockService) persistBlock(blockRecord *model.SolBlocks) {
+	if blockRecord == nil || s.sc.SolBlockModel == nil {
+		return
+	}
+
+	writeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := s.sc.SolBlockModel.Upsert(writeCtx, blockRecord)
+	if err != nil {
+		s.Errorf("upsert sol block error, slot=%d, err=%v", blockRecord.Slot, err)
+	}
+}
+
+func classifyBlockStatus(err error) int64 {
+	if err == nil {
+		return constants.BlockProcessed
+	}
+
+	errMsg := strings.ToLower(err.Error())
+	if strings.Contains(errMsg, "was skipped") ||
+		strings.Contains(errMsg, "ledger jump") ||
+		strings.Contains(errMsg, "slot was skipped") {
+		return constants.BlockSkipped
+	}
+
+	return constants.BlockFailed
 }

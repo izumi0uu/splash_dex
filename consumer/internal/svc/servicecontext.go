@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -8,13 +9,17 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/gagliardetto/solana-go/rpc/jsonrpc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"splash.xyz/dex/consumer/internal/config"
+	"splash.xyz/dex/consumer/internal/model"
 )
 
 const defaultRPCTimeout = 30 * time.Second
 
 type ServiceContext struct {
 	Config         config.Config
+	DB             sqlx.SqlConn
+	SolBlockModel  model.SolBlocksModel
 	solClientLock  sync.Mutex
 	solClientIndex int
 	solClient      *rpc.Client
@@ -31,9 +36,7 @@ func NewSolRPCClient(endpoint string) *rpc.Client {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	return &ServiceContext{
-		Config: c,
-	}
+	return newServiceContext(c, nil)
 }
 
 func NewSolServiceContext(c config.Config) *ServiceContext {
@@ -47,10 +50,7 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 		solClients = append(solClients, NewSolRPCClient(node))
 	}
 
-	return &ServiceContext{
-		Config:     c,
-		solClients: solClients,
-	}
+	return newServiceContext(c, solClients)
 }
 
 func (sc *ServiceContext) GetSolClient() *rpc.Client {
@@ -64,4 +64,35 @@ func (sc *ServiceContext) GetSolClient() *rpc.Client {
 	index := sc.solClientIndex % len(sc.solClients)
 	sc.solClient = sc.solClients[index]
 	return sc.solClients[index]
+}
+
+func newServiceContext(c config.Config, solClients []*rpc.Client) *ServiceContext {
+	sc := &ServiceContext{
+		Config:     c,
+		solClients: solClients,
+	}
+
+	if conn := newMysqlConn(c.Mysql); conn != nil {
+		sc.DB = conn
+		sc.SolBlockModel = model.NewSolBlocksModel(conn)
+	}
+
+	return sc
+}
+
+func newMysqlConn(cfg config.Mysql) sqlx.SqlConn {
+	if cfg.Host == "" || cfg.User == "" || cfg.Database == "" {
+		logx.Infof("mysql config incomplete, block persistence disabled")
+		return nil
+	}
+
+	dsn := fmt.Sprintf(
+		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=true&loc=Local",
+		cfg.User,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
+		cfg.Database,
+	)
+	return sqlx.NewMysql(dsn)
 }

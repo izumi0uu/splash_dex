@@ -2,13 +2,20 @@ CREATE TABLE IF NOT EXISTS sol_blocks (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     chain_id BIGINT NOT NULL,
     slot BIGINT UNSIGNED NOT NULL,
+    block_height BIGINT UNSIGNED DEFAULT NULL,
+    parent_slot BIGINT UNSIGNED DEFAULT NULL,
+    block_hash VARCHAR(64) DEFAULT NULL,
+    previous_block_hash VARCHAR(64) DEFAULT NULL,
     block_time DATETIME(3) NULL,
     tx_count INT NOT NULL DEFAULT 0,
+    status TINYINT NOT NULL DEFAULT 0,
+    err_msg VARCHAR(512) DEFAULT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uk_chain_slot (chain_id, slot),
-    KEY idx_block_time (block_time)
+    KEY idx_block_time (block_time),
+    KEY idx_status_updated_at (status, updated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS sol_transactions (
