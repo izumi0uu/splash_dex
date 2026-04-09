@@ -44,10 +44,15 @@ func main() {
 	{
 		// increment message queue
 		slotChan := make(chan uint64, 100)
+		failedSlotChan := make(chan uint64, 100)
 
 		// consumer: comsuming concurrently
 		for i := 0; i < c.Consumer.Concurrency; i++ {
-			group.Add(block.NewBlockService(ctx, "block-real", slotChan, i))
+			group.Add(block.NewBlockService(ctx, "block-real", slotChan, failedSlotChan, i))
+		}
+
+		for i := 0; i < c.Consumer.Concurrency; i++ {
+			group.Add(block.NewBlockService(ctx, "block-failed", failedSlotChan, nil, i))
 		}
 
 		// Producer: get latest slot
