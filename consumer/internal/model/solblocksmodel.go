@@ -2,8 +2,10 @@ package model
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"splash.xyz/dex/pkg/constants"
 )
 
 var _ SolBlocksModel = (*customSolBlocksModel)(nil)
@@ -14,6 +16,7 @@ type (
 	SolBlocksModel interface {
 		solBlocksModel
 		Upsert(ctx context.Context, data *SolBlocks) error
+		FindRetryableSlots(ctx context.Context, chainId int64, limit int) ([]*SolBlocks, error)
 		withSession(session sqlx.Session) SolBlocksModel
 	}
 
@@ -58,6 +61,8 @@ ON DUPLICATE KEY UPDATE
 	updated_at = CURRENT_TIMESTAMP
 `
 
+const findRetryableSlotsStmt = "select %s from %s where `chain_id` = ? and `status` = ? order by `slot` asc limit ?"
+
 func (m *customSolBlocksModel) Upsert(ctx context.Context, data *SolBlocks) error {
 	_, err := m.conn.ExecCtx(ctx, upsertSolBlocksStmt,
 		data.ChainId,
@@ -72,4 +77,25 @@ func (m *customSolBlocksModel) Upsert(ctx context.Context, data *SolBlocks) erro
 		data.ErrMsg,
 	)
 	return err
+}
+
+func (m *customSolBlocksModel) FindRetryableSlots(ctx context.Context, chainId int64, limit int) ([]*SolBlocks, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+
+	var resp []*SolBlocks
+	query := fmt.Sprintf(findRetryableSlotsStmt, solBlocksRows, m.table)
+	err := m.conn.QueryRowsCtx(ctx, &resp, query, chainId, constants.BlockFailed, limit)
+	switch err {
+	case nil:
+		if len(resp) == 0 {
+			return nil, ErrNotFound
+		}
+		return resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
 }

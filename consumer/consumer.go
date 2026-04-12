@@ -48,15 +48,15 @@ func main() {
 
 		// consumer: comsuming concurrently
 		for i := 0; i < c.Consumer.Concurrency; i++ {
-			group.Add(block.NewBlockService(ctx, "block-real", slotChan, failedSlotChan, i))
+			group.Add(block.NewBlockService(ctx, "block-real", slotChan, i))
 		}
 
 		for i := 0; i < c.Consumer.Concurrency; i++ {
-			group.Add(block.NewBlockService(ctx, "block-failed", failedSlotChan, nil, i))
+			group.Add(block.NewBlockService(ctx, "block-failed", failedSlotChan, i))
 		}
 
 		// Producer: get latest slot
-		group.Add(slot.NewSlotServiceGroup(ctx, slotChan))
+		group.Add(slot.NewSlotServiceGroup(ctx, slotChan, failedSlotChan))
 	}
 
 	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)

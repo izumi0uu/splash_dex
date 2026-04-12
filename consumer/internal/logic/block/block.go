@@ -24,7 +24,6 @@ type BlockService struct {
 	logx.Logger
 	workerPool *ants.Pool
 	slotChan   chan uint64
-	failedChan chan uint64
 	solPrice   float64
 	slot       uint64
 	Conn       *websocket.Conn
@@ -48,7 +47,7 @@ func (s *BlockService) Start() {
 	s.GetBlockFromHttp()
 }
 
-func NewBlockService(sc *svc.ServiceContext, name string, slotChan chan uint64, failedChan chan uint64, index int) *BlockService {
+func NewBlockService(sc *svc.ServiceContext, name string, slotChan chan uint64, index int) *BlockService {
 	ctx, cancel := context.WithCancelCause(context.Background())
 	pool, _ := ants.NewPool(5)
 	solService := &BlockService{
@@ -56,7 +55,6 @@ func NewBlockService(sc *svc.ServiceContext, name string, slotChan chan uint64, 
 		sc:         sc,
 		Logger:     logx.WithContext(context.Background()).WithFields(logx.Field("service", fmt.Sprintf("%s-%v", name, index))),
 		slotChan:   slotChan,
-		failedChan: failedChan,
 		workerPool: pool,
 		ctx:        ctx,
 		cancel:     cancel,
@@ -88,6 +86,20 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 		return
 	}
 
+	existing, err := s.sc.SolBlockModel.FindOneByChainIdSlot(ctx, s.sc.Config.Sol.ChainId, uint64(slot))
+	switch {
+	case err == nil:
+		if existing.Status == constants.BlockProcessed || existing.Status == constants.BlockSkipped {
+			s.Infof("skip slot=%d, status=%d", slot, existing.Status)
+			return
+		}
+	case err == model.ErrNotFound:
+		// continue
+	default:
+		s.Errorf("find existing block error, slot=%d, err=%v", slot, err)
+		return
+	}
+
 	blockRecord := &model.SolBlocks{
 		ChainId: s.sc.Config.Sol.ChainId,
 		Slot:    uint64(slot),
@@ -114,7 +126,6 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 		blockRecord.Status = classifyBlockStatus(err)
 		blockRecord.ErrMsg = TrimmedNullableString(err.Error())
 		s.Errorf("get block info error, slot=%d, err=%v", slot, err)
-		s.enqueueFailedSlot(uint64(slot), blockRecord.Status)
 		return
 	}
 
@@ -248,24 +259,4 @@ func classifyBlockStatus(err error) int64 {
 	}
 
 	return constants.BlockFailed
-}
-
-func (s *BlockService) enqueueFailedSlot(slot uint64, status int64) {
-	if s.failedChan == nil || slot == 0 {
-		return
-	}
-
-	// Skipped slots are deterministic and don't benefit from in-memory retry.
-	if status == constants.BlockSkipped {
-		return
-	}
-
-	select {
-	case <-s.ctx.Done():
-		return
-	case s.failedChan <- slot:
-		s.Infof("enqueue failed slot for retry, slot=%d", slot)
-	default:
-		s.Errorf("failed slot queue is full, drop slot=%d", slot)
-	}
 }
