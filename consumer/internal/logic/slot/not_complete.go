@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	"splash.xyz/dex/consumer/internal/model"
 	"splash.xyz/dex/consumer/internal/svc"
 )
 
@@ -42,72 +41,58 @@ func (s *SlotNotCompleteService) Start() {
 	ticker := time.NewTicker(retryableScanInterval)
 	defer ticker.Stop()
 
-	s.scanAndEnqueue()
-
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-ticker.C:
-			s.scanAndEnqueue()
-		}
-	}
+	s.RecoverFailedBlock()
 }
 
 func (s *SlotNotCompleteService) Stop() {
 	s.cancel(ErrServiceStop)
 }
 
-func (s *SlotNotCompleteService) scanAndEnqueue() {
-	if s.sc.SolBlockModel == nil || s.errorChan == nil {
-		return
+func (s *SlotNotCompleteService) RecoverFailedBlock() {
+	slot := s.sc.Config.Sol.StartBlock
+
+	if slot == 0 {
+		block, err := s.sc.SolBlockModel.FindFirstFailBlock(s.ctx, s.sc.Config.Sol.ChainId)
+		if err != nil {
+			// no failed block or query error
+			return
+		}
+		slot = block.Slot
 	}
 
-	queryCtx, cancel := context.WithTimeout(s.ctx, 5*time.Second)
-	defer cancel()
+	checkTicker := time.NewTicker(5 * time.Second)
+	sendTicker := time.NewTicker(5 * time.Second)
+	defer checkTicker.Stop()
+	defer sendTicker.Stop()
 
-	blocks, err := s.sc.SolBlockModel.FindRetryableSlots(queryCtx, s.sc.Config.Sol.ChainId, retryableSlotLimit)
-	switch err {
-	case nil:
-	case model.ErrNotFound:
-		return
-	default:
-		s.Errorf("scan retryable slots error: %v", err)
-		return
-	}
-
-	now := time.Now()
-	s.pruneEnqueued(now)
-
-	for _, block := range blocks {
-		if block == nil || block.Slot == 0 {
-			continue
-		}
-		if last, ok := s.lastEnqueued[block.Slot]; ok && now.Sub(last) < retryableSlotCooldown {
-			continue
-		}
-
+	for {
 		select {
 		case <-s.ctx.Done():
 			return
-		case s.errorChan <- block.Slot:
-			s.lastEnqueued[block.Slot] = now
-			s.Infof("enqueue retryable slot=%d status=%d", block.Slot, block.Status)
-		default:
-			s.Errorf("retryable slot queue is full, drop slot=%d", block.Slot)
-			return
-		}
-	}
-}
+		case <-checkTicker.C:
+			fromSlot := slot
+			if fromSlot > 100 {
+				fromSlot = fromSlot - 100
+			}
 
-func (s *SlotNotCompleteService) pruneEnqueued(now time.Time) {
-	if len(s.lastEnqueued) == 0 {
-		return
-	}
+			blocks, err := s.sc.SolBlockModel.FindProcessingSlots(
+				s.ctx,
+				s.sc.Config.Sol.ChainId,
+				fromSlot,
+				50,
+			)
+			if err != nil {
+				continue
+			}
 
-	for slot, at := range s.lastEnqueued {
-		if now.Sub(at) > 10*retryableSlotCooldown {
-			delete(s.lastEnqueued, slot)
+			for _, block := range blocks {
+				select {
+				case <-s.ctx.Done():
+					return
+				case <-sendTicker.C:
+					s.errorChan <- block.Slot
+				}
+			}
 		}
 	}
 }

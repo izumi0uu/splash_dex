@@ -16,7 +16,8 @@ type (
 	SolBlocksModel interface {
 		solBlocksModel
 		Upsert(ctx context.Context, data *SolBlocks) error
-		FindRetryableSlots(ctx context.Context, chainId int64, limit int) ([]*SolBlocks, error)
+		FindFirstFailBlock(ctx context.Context, chainId int64) (*SolBlocks, error)
+		FindProcessingSlots(ctx context.Context, chainId int64, fromSlot uint64, limit int) ([]*SolBlocks, error)
 		withSession(session sqlx.Session) SolBlocksModel
 	}
 
@@ -60,8 +61,19 @@ ON DUPLICATE KEY UPDATE
 	err_msg = VALUES(err_msg),
 	updated_at = CURRENT_TIMESTAMP
 `
+const queryFirstFailBlockStmt = `
+select %s from %s
+where chain_id = ? and status = ?
+order by slot asc
+limit 1
+`
 
-const findRetryableSlotsStmt = "select %s from %s where `chain_id` = ? and `status` = ? order by `slot` asc limit ?"
+const queryProcessingSlotsStmt = `
+select %s from %s
+where chain_id = ? and status = ? and slot >= ?
+order by slot desc
+limit ?
+`
 
 func (m *customSolBlocksModel) Upsert(ctx context.Context, data *SolBlocks) error {
 	_, err := m.conn.ExecCtx(ctx, upsertSolBlocksStmt,
@@ -79,19 +91,26 @@ func (m *customSolBlocksModel) Upsert(ctx context.Context, data *SolBlocks) erro
 	return err
 }
 
-func (m *customSolBlocksModel) FindRetryableSlots(ctx context.Context, chainId int64, limit int) ([]*SolBlocks, error) {
-	if limit <= 0 {
-		limit = 50
-	}
-
-	var resp []*SolBlocks
-	query := fmt.Sprintf(findRetryableSlotsStmt, solBlocksRows, m.table)
-	err := m.conn.QueryRowsCtx(ctx, &resp, query, chainId, constants.BlockFailed, limit)
+func (m *customSolBlocksModel) FindFirstFailBlock(ctx context.Context, chainId int64) (*SolBlocks, error) {
+	var resp SolBlocks
+	query := fmt.Sprintf(queryFirstFailBlockStmt, solBlocksRows, m.table)
+	err := m.conn.QueryRowCtx(ctx, &resp, query, chainId, constants.BlockFailed)
 	switch err {
 	case nil:
-		if len(resp) == 0 {
-			return nil, ErrNotFound
-		}
+		return &resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
+
+func (m *customSolBlocksModel) FindProcessingSlots(ctx context.Context, chainId int64, fromSlot uint64, limit int) ([]*SolBlocks, error) {
+	var resp []*SolBlocks
+	query := fmt.Sprintf(queryProcessingSlotsStmt, solBlocksRows, m.table)
+	err := m.conn.QueryRowsCtx(ctx, &resp, query, chainId, constants.BlockPending, fromSlot, limit)
+	switch err {
+	case nil:
 		return resp, nil
 	case sqlx.ErrNotFound:
 		return nil, ErrNotFound
